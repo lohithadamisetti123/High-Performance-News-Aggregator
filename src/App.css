@@ -9,16 +9,17 @@
 }
 
 .hero img {
-  max-width: 100%;
   display: block;
   margin: 0 auto 16px;
+  max-width: 100%;
+  height: auto;
 }
 
 .controls {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .controls input {
@@ -31,14 +32,19 @@
   padding: 8px 12px;
 }
 
-.article-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.article-list-virtual-container {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  height: 600px;
+  overflow: auto;
+  padding: 8px;
+  margin-top: 8px;
 }
 
 .article-item {
   border: 1px solid #ddd;
   padding: 12px;
   border-radius: 4px;
+  background: #fafafa;
+  margin-bottom: 8px;
 }

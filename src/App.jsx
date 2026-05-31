@@ -1,21 +1,37 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import _ from 'lodash'; // Anti-pattern: full lodash import
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  Suspense,
+  lazy,
+} from 'react';
+import sortBy from 'lodash/sortBy';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import './App.css';
 
-// Expensive date formatter created on each render (anti-pattern)
+// Reuse a single date formatter instance
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  year: 'numeric',
+  month: 'short',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+// Heavy, non-critical component (code-split)
+const AboutModal = lazy(() => import('./AboutModal.jsx'));
+
 function formatTimestamp(timestamp) {
-  // Very naive expensive computation
-  const date = new Date(timestamp * 1000);
-  let result = '';
-  for (let i = 0; i < 1000; i++) {
-    result = date.toLocaleString();
-  }
-  return result;
+  if (!timestamp) return '';
+  return dateFormatter.format(new Date(timestamp * 1000));
 }
 
-function ArticleItem({ article }) {
-  // Expensive computation in render
-  const formattedTime = formatTimestamp(article.time || 0);
+const ArticleItem = React.memo(function ArticleItem({ article }) {
+  const formattedTime = useMemo(
+    () => formatTimestamp(article.time),
+    [article.time],
+  );
 
   return (
     <div className="article-item" data-testid="article-item">
@@ -24,69 +40,99 @@ function ArticleItem({ article }) {
           {article.title}
         </a>
       </h3>
-      <p>Score: {article.score} | Author: {article.by}</p>
+      <p>
+        Score: {article.score} | Author: {article.by}
+      </p>
       <p>Time: {formattedTime}</p>
     </div>
   );
-}
+});
 
 function App() {
   const [articles, setArticles] = useState([]);
   const [filter, setFilter] = useState('');
   const [sorted, setSorted] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const parentRef = useRef(null);
 
   useEffect(() => {
-    const fetchAllStories = async () => {
+    const fetchStories = async () => {
+      setLoading(true);
       try {
-        const response = await fetch(
+        const topUrl =
           import.meta.env.VITE_HN_TOP_STORIES_URL ||
-            'https://hacker-news.firebaseio.com/v0/topstories.json'
-        );
+          'https://hacker-news.firebaseio.com/v0/topstories.json';
+        const itemBase =
+          import.meta.env.VITE_HN_ITEM_URL ||
+          'https://hacker-news.firebaseio.com/v0/item';
+
+        const response = await fetch(topUrl);
         const storyIds = await response.json();
-        const stories = [];
-        // Anti-pattern: sequential fetching in a loop (N+1 waterfall)
-        for (const id of storyIds.slice(0, 500)) {
-          const storyResp = await fetch(
-            `${import.meta.env.VITE_HN_ITEM_URL ||
-              'https://hacker-news.firebaseio.com/v0/item'}/${id}.json`
-          );
-          const storyData = await storyResp.json();
-          stories.push(storyData);
-        }
-        setArticles(stories);
+        const ids = storyIds.slice(0, 500);
+
+        // Parallelize requests with Promise.all
+        const stories = await Promise.all(
+          ids.map(async (id) => {
+            const resp = await fetch(`${itemBase}/${id}.json`);
+            return resp.json();
+          }),
+        );
+
+        setArticles(stories.filter(Boolean));
       } catch (error) {
         console.error('Error fetching stories', error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchAllStories();
+
+    fetchStories();
   }, []);
 
-  // Anti-pattern: filter and sort recomputed on every render with full lodash
-  const displayedArticles = useMemo(() => {
+  const filteredAndSorted = useMemo(() => {
     let result = articles;
     if (filter.trim()) {
-      result = result.filter((a) =>
-        a.title?.toLowerCase().includes(filter.toLowerCase())
+      const lower = filter.toLowerCase();
+      result = result.filter(
+        (a) => a.title && a.title.toLowerCase().includes(lower),
       );
     }
     if (sorted) {
-      result = _.sortBy(result, 'score').reverse();
+      result = sortBy(result, 'score').reverse();
     }
     return result;
   }, [articles, filter, sorted]);
 
+  const rowVirtualizer = useVirtualizer({
+    count: filteredAndSorted.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 120,
+    overscan: 10,
+  });
+
   return (
     <div className="app">
-      {/* Large unoptimized hero image, no width/height/srcset/loading */}
-      <div className="hero">
+      <header className="hero">
         <img
           data-testid="hero-image"
-          src="https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg"
+          src="https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1600"
+          srcSet="
+            https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=800 800w,
+            https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1200 1200w,
+            https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1600 1600w
+          "
+          width="1200"
+          height="600"
           alt="News hero"
         />
         <h1>HackerNews Top Stories</h1>
-        <p>Intentionally slow, unoptimized version for performance baseline.</p>
-      </div>
+        <p>
+          High-performance news aggregator with optimized Core Web Vitals and
+          virtualized list.
+        </p>
+      </header>
 
       <div className="controls">
         <input
@@ -98,14 +144,50 @@ function App() {
         <button onClick={() => setSorted((prev) => !prev)}>
           {sorted ? 'Unsort' : 'Sort by Score'}
         </button>
+        <button onClick={() => setShowAbout(true)}>About</button>
       </div>
 
-      {/* No virtualization: render all 500 items */}
-      <div className="article-list" data-testid="article-list">
-        {displayedArticles.map((article) => (
-          <ArticleItem key={article.id} article={article} />
-        ))}
+      {loading && <p>Loading stories...</p>}
+
+      <div
+        ref={parentRef}
+        className="article-list-virtual-container"
+        data-testid="article-list"
+      >
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const article = filteredAndSorted[virtualRow.index];
+            if (!article) return null;
+            return (
+              <div
+                key={article.id}
+                data-index={virtualRow.index}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <ArticleItem article={article} />
+              </div>
+            );
+          })}
+        </div>
       </div>
+
+      {showAbout && (
+        <Suspense fallback={<div>Loading details...</div>}>
+          <AboutModal onClose={() => setShowAbout(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }

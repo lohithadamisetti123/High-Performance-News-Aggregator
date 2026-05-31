@@ -1,36 +1,62 @@
 # High-Performance News Aggregator
 
-This project is a React + Vite application that displays the top stories from HackerNews. It is built in two phases:
+A React + Vite application that displays the top 500 stories from HackerNews and demonstrates a complete performance optimization workflow.
 
-- A deliberately slow, unoptimized version (`slow-version` branch) demonstrating common performance anti-patterns.
-- An optimized version (`main` branch) with improved Core Web Vitals scores.
+- **slow-version branch**: Intentionally slow implementation with performance anti-patterns.
+- **main branch**: Optimized implementation with better Core Web Vitals, list virtualization, and code splitting.
 
-## Tech Stack
+## Features
 
-- React + Vite
-- Hacker News Firebase API
-- Docker + Docker Compose
+- Fetches and displays top 500 HackerNews stories.
+- Filter by title and sort by score.
+- Hero image banner with modern optimization attributes.
+- Virtualized article list for high-performance rendering.
 
-## Running the Application (Slow Version)
+## Requirements
+
+- Node.js (LTS)
+- npm
+- Docker & Docker Compose
+
+## Environment Variables
+
+Copy `.env.example` to `.env`:
 
 ```bash
-# Clone repo
-git clone https://github.com/lohithadamisetti123/High-Performance-News-Aggregator.git
-cd High-Performance-News-Aggregator
-
-# Checkout slow version
-git checkout slow-version
-
-# Install dependencies
-npm install
-
-# Copy env example
 cp .env.example .env
+```
 
-# Run dev server
+Default values:
+
+- `VITE_HN_TOP_STORIES_URL`
+- `VITE_HN_ITEM_URL`
+- `PORT`
+
+## Running (Dev)
+
+```bash
+npm install
+cp .env.example .env
 npm run dev
 ```
 
-## Running the Optimized Version (Main)
+Visit `http://localhost:5173`.
 
-Instructions for the optimized version are documented in the `main` branch README.
+## Production Build
+
+```bash
+npm run build
+npm run preview
+```
+
+Build artifacts are generated in `dist/`. The build also produces `stats.html` bundle analysis.
+
+## Docker
+
+See `docker-compose.yml` and `Dockerfile` for containerized setup:
+
+```bash
+docker-compose up -d --build
+```
+
+Then open the application on the configured port (default 4173).

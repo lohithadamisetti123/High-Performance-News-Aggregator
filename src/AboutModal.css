@@ -1,0 +1,27 @@
+.about-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.about-modal {
+  background: #ffffff;
+  color: #222222;
+  padding: 16px;
+  border-radius: 8px;
+  max-width: 480px;
+  width: 100%;
+}
+
+.about-modal h2 {
+  margin-top: 0;
+}
+
+.about-modal button {
+  margin-top: 12px;
+  padding: 8px 12px;
+}
