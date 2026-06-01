@@ -23,17 +23,7 @@ It includes:
 
 ---
 
-## UI screenshots
 
-![Home feed and search](screenshots/image.png)
-
-*Main feed with virtualized story cards, search, and sort controls.*
-
-![Responsive layout and details modal](screenshots/image1.png)
-
-*Responsive layout with theme support and story detail presentation.*
-
----
 
 ## Why this project matters
 
