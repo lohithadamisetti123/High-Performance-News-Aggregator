@@ -4,10 +4,158 @@
   color: #222222;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    background-color: #1a1a2e;
+    color: #f0f0f0;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
 #root {
   min-height: 100vh;
+  width: 100%;
+  transition: background-color 300ms ease-out, color 300ms ease-out;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e94560;
+  border-radius: 6px;
+  transition: background 150ms ease-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff6b9d;
+}
+
+* {
+  scrollbar-color: #e94560 transparent;
+  scrollbar-width: thin;
+}
+
+:focus-visible {
+  outline: 2px solid #e94560;
+  outline-offset: 2px;
+}
+
+::selection {
+  background-color: #e94560;
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: #e94560;
+  color: #ffffff;
+}
+
+a {
+  color: #e94560;
+  text-decoration: none;
+  transition: color 150ms ease-out;
+}
+
+a:hover {
+  color: #ff6b9d;
+  text-decoration: underline;
+}
+
+a:focus-visible {
+  outline: 2px solid #e94560;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 150ms ease-out;
+}
+
+button:focus-visible {
+  outline: 2px solid #e94560;
+  outline-offset: 2px;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #e94560;
+  outline-offset: 2px;
+}
+
+code,
+pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  code,
+  pre {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  body {
+    background-color: white;
+    color: black;
+  }
 }

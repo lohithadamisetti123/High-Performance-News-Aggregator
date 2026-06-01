@@ -54,12 +54,14 @@ function App() {
   const [sorted, setSorted] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const parentRef = useRef(null);
 
   useEffect(() => {
     const fetchStories = async () => {
       setLoading(true);
+      setError(null);
       try {
         const topUrl =
           import.meta.env.VITE_HN_TOP_STORIES_URL ||
@@ -69,20 +71,37 @@ function App() {
           'https://hacker-news.firebaseio.com/v0/item';
 
         const response = await fetch(topUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch story IDs: ${response.statusText}`);
+        }
+        
         const storyIds = await response.json();
         const ids = storyIds.slice(0, 500);
 
-        // Parallelize requests with Promise.all
-        const stories = await Promise.all(
-          ids.map(async (id) => {
-            const resp = await fetch(`${itemBase}/${id}.json`);
-            return resp.json();
-          }),
-        );
+        // Parallelize requests with Promise.all in batches to avoid overwhelming the server
+        const batchSize = 50;
+        const stories = [];
+        for (let i = 0; i < ids.length; i += batchSize) {
+          const batch = ids.slice(i, i + batchSize);
+          const batchStories = await Promise.all(
+            batch.map(async (id) => {
+              try {
+                const resp = await fetch(`${itemBase}/${id}.json`);
+                if (!resp.ok) return null;
+                return resp.json();
+              } catch (err) {
+                console.warn(`Failed to fetch story ${id}:`, err);
+                return null;
+              }
+            }),
+          );
+          stories.push(...batchStories.filter(Boolean));
+        }
 
-        setArticles(stories.filter(Boolean));
+        setArticles(stories);
       } catch (error) {
         console.error('Error fetching stories', error);
+        setError(error.message || 'Failed to fetch stories. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -125,12 +144,12 @@ function App() {
           "
           width="1200"
           height="600"
-          alt="News hero"
+          alt="News hero banner"
         />
         <h1>HackerNews Top Stories</h1>
         <p>
           High-performance news aggregator with optimized Core Web Vitals and
-          virtualized list.
+          virtualized list rendering.
         </p>
       </header>
 
@@ -140,14 +159,41 @@ function App() {
           placeholder="Filter by title..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
+          aria-label="Filter articles by title"
         />
-        <button onClick={() => setSorted((prev) => !prev)}>
-          {sorted ? 'Unsort' : 'Sort by Score'}
+        <button 
+          onClick={() => setSorted((prev) => !prev)}
+          aria-pressed={sorted}
+        >
+          {sorted ? '↓ Unsort' : '↑ Sort by Score'}
         </button>
-        <button onClick={() => setShowAbout(true)}>About</button>
+        <button onClick={() => setShowAbout(true)}>
+          ℹ️ About
+        </button>
       </div>
 
-      {loading && <p>Loading stories...</p>}
+      {loading && <p className="loading">Loading stories...</p>}
+      
+      {error && (
+        <div style={{
+          margin: '16px',
+          padding: '16px',
+          background: '#fee',
+          border: '2px solid #f88',
+          borderRadius: '8px',
+          color: '#c33',
+          fontWeight: '500'
+        }}>
+          Error: {error}
+        </div>
+      )}
+
+      {!loading && articles.length === 0 && !error && (
+        <div className="empty-state">
+          <p>📭 No articles found.</p>
+          <p>Try adjusting your filters.</p>
+        </div>
+      )}
 
       <div
         ref={parentRef}
@@ -184,7 +230,7 @@ function App() {
       </div>
 
       {showAbout && (
-        <Suspense fallback={<div>Loading details...</div>}>
+        <Suspense fallback={<div style={{ padding: '32px', textAlign: 'center' }}>Loading details...</div>}>
           <AboutModal onClose={() => setShowAbout(false)} />
         </Suspense>
       )}
