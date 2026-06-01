@@ -6,6 +6,18 @@ This repository demonstrates a complete optimization workflow across UI polish, 
 
 ---
 
+## UI screenshots
+
+![Home feed and search](screenshots/image.png)
+
+*Main feed with virtualized story cards, search, and sort controls.*
+
+![Responsive layout and details modal](screenshots/image1.png)
+
+*Responsive layout with theme support and story detail presentation.*
+
+---
+
 ## Why this project matters
 
 - **Performance-first experience**: Virtualized list rendering, memoization, and preconnect hints keep the UI fast even with hundreds of stories.
