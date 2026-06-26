@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify:playwright-node": "node ./scripts/verify.js"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.26",
@@ -25,6 +26,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "rollup-plugin-visualizer": "^7.0.1",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "playwright": "^1.39.0"
   }
 }
