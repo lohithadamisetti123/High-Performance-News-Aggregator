@@ -1,40 +1,25 @@
-# Build stage
+# ── Build stage ──────────────────────────────────────────────
 FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package*.json ./
-COPY vite.config.* ./
-COPY .env.example ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
-WORKDIR /app
+# ── Production stage (nginx) ────────────────────────────────
+FROM nginx:stable-alpine AS production
 
-# Install wget for healthcheck
+# Install wget for Docker healthcheck
 RUN apk add --no-cache wget
 
-# Copy package.json and lockfile
-COPY package*.json ./
+# Copy the built assets into nginx's default serve directory
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Install ALL dependencies including dev so `vite` is available
-RUN npm install
+# Copy custom nginx config for SPA support
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy built assets and stats
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/stats.html ./stats.html
+EXPOSE 3000
 
-# Copy env
-COPY .env.example ./.env
-
-ENV PORT=4173
-
-EXPOSE 4173
-
-# Ensure node_modules/.bin is on PATH so `vite` is found
-ENV PATH=/app/node_modules/.bin:$PATH
-
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["nginx", "-g", "daemon off;"]

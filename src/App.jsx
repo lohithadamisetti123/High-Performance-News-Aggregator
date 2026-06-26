@@ -142,6 +142,7 @@ function App() {
             https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1200 1200w,
             https://images.pexels.com/photos/261949/pexels-photo-261949.jpeg?auto=compress&cs=tinysrgb&w=1600 1600w
           "
+          sizes="(max-width: 800px) 100vw, (max-width: 1200px) 100vw, 1600px"
           width="1200"
           height="600"
           alt="News hero banner"

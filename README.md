@@ -2,11 +2,11 @@
 
 A responsive, production-ready React + Vite application that fetches and renders the top 500 HackerNews stories with modern web performance and accessibility best practices.
 
-This repository demonstrates a complete optimization workflow across UI polish, data fetching efficiency, frontend performance, build analysis, and containerized deployment.
+This repository demonstrates a complete optimization workflow: starting from an intentionally unoptimized baseline (`slow-version` branch), profiling and auditing with Lighthouse and Chrome DevTools, and then systematically applying performance fixes on the `main` branch.
 
 ---
 
-## UI screenshots
+## UI Screenshots
 
 ![Home feed and search](screenshots/image.png)
 
@@ -18,83 +18,91 @@ This repository demonstrates a complete optimization workflow across UI polish, 
 
 ---
 
-## Why this project matters
+## Why This Project Matters
 
-- **Performance-first experience**: Virtualized list rendering, memoization, and preconnect hints keep the UI fast even with hundreds of stories.
-- **Real-time HackerNews feed**: Fetches the latest top stories from HackerNews and presents them with score, author, time, and comment counts.
-- **Polished UI**: Advanced styling, responsive layout, dark mode support, animated state transitions, and accessibility enhancements.
-- **Container-ready**: Production build and Docker Compose support make it easy to deploy locally or in CI/CD.
-
----
-
-## What’s included
-
-- `src/App.jsx`: high-performance data fetching and rendering logic
-- `src/index.css`: global design tokens, focus styling, and theme support
-- `src/App.css`: responsive grid layout, cards, skeleton loaders, and animations
-- `src/AboutModal.css`: polished modal styling and smooth transitions
-- `Dockerfile`: multi-stage production build for small, secure containers
-- `docker-compose.yml`: service orchestration with healthcheck and environment support
-- `stats.html`: bundle analysis output from Vite build
-- `PERFORMANCE.md`: audit notes and key optimization results
+- **Performance-first experience**: Virtualized list rendering with `@tanstack/react-virtual`, memoization with `React.memo` and `useMemo`, and preconnect hints keep the UI fast with hundreds of stories.
+- **Real-time HackerNews feed**: Fetches the latest top 500 stories from HackerNews and presents them with score, author, and formatted time.
+- **Polished UI**: Gradient-based design system, responsive layout, automatic dark mode support via `prefers-color-scheme`, animated transitions, and accessibility enhancements.
+- **Container-ready**: Production build served via nginx in Docker with Docker Compose and healthcheck support.
 
 ---
 
-## Core features
+## Core Features
 
-- Fetches and displays the top 500 HackerNews stories
-- Search and filter stories by title in real time
-- Virtualized scrolling for high-volume list rendering
-- Sorts stories by score for quick quality discovery
-- Lightweight hero banner with optimized image loading
-- Dark mode toggle and accessible color contrast
-- Skeleton loading UI during data fetch
+- Fetches and displays the top 500 HackerNews stories using parallelized `Promise.all` batching
+- Real-time search and filter stories by title
+- Sort stories by score with a single click
+- Virtualized scrolling via `@tanstack/react-virtual` for high-volume list rendering
+- Optimized hero image with `width`, `height`, `srcset`, and `sizes` attributes
+- Code-split About modal via `React.lazy` and `Suspense`
+- Cherry-picked `lodash/sortBy` import for minimal bundle size
+- `React.memo` and `useMemo` to prevent unnecessary re-renders
+- Reusable `Intl.DateTimeFormat` instance for efficient date formatting
+- Dark mode support via CSS `prefers-color-scheme`
+- Loading state with animated spinner
 - Error and empty-state handling with friendly messaging
 - Responsive layout for mobile, tablet, and desktop
-- Production-optimized Vite build with bundle analysis
-- Full Docker Compose support for local container deployment
+- Bundle analysis report (`stats.html`) generated at build time
+- Full Docker Compose support for containerized deployment
 
 ---
 
-## Setup requirements
+## Branch Information
 
-Required tools:
+| Branch | Purpose |
+|--------|---------|
+| `main` | Final optimized production implementation |
+| `slow-version` | Intentionally unoptimized baseline with anti-patterns for performance comparison |
 
-- Node.js 18+ (LTS recommended)
-- npm 10+ or compatible package manager
-- Docker Desktop with Docker Compose support (optional for container deployment)
+### Anti-Patterns in `slow-version`
+
+The `slow-version` branch contains deliberately unoptimized code:
+- **N+1 network waterfall**: Sequential `for` loop fetching 500 story details one by one
+- **Full lodash import**: `import _ from 'lodash'` instead of cherry-picked imports
+- **No list virtualization**: All 500 articles rendered directly to the DOM via `.map()`
+- **Expensive computation in render**: Redundant 1000-iteration loop in date formatting
+- **Unoptimized hero image**: No `width`, `height`, `srcset`, or `sizes` attributes
+- **No code splitting**: Single monolithic JavaScript bundle
 
 ---
 
-## Local development
+## Setup Requirements
 
-1. Install dependencies:
+- **Node.js** 18+ (LTS recommended)
+- **npm** 10+ or compatible package manager
+- **Docker Desktop** with Docker Compose (for containerized deployment)
+
+---
+
+## Local Development
+
+1. **Install dependencies:**
 
 ```bash
 npm install
 ```
 
-2. Create environment file:
+2. **Create environment file:**
 
 ```bash
-copy .env.example .env
+cp .env.example .env
 ```
 
-3. Start the development server:
+3. **Start the development server:**
 
 ```bash
 npm run dev
 ```
 
-4. Open the app in your browser:
+4. **Open the app in your browser:**
 
-```text
-http://localhost:5173
+```
+http://localhost:3000
 ```
 
 ---
 
-## Production build
+## Production Build
 
 Build and preview the optimized production bundle:
 
@@ -105,122 +113,115 @@ npm run preview
 
 The static output is written to the `dist/` folder.
 
-### Build artifacts
+### Build Artifacts
 
-- `dist/index.html`
-- `dist/assets/*.js`
-- `dist/assets/*.css`
+After running `npm run build`, the following are generated:
 
-### Bundle analysis
-
-The project produces a `stats.html` report that helps verify bundle size and chunk splitting.
+- `dist/index.html` — Entry HTML
+- `dist/assets/index-[hash].js` — Main application bundle
+- `dist/assets/AboutModal-[hash].js` — Code-split chunk (lazy-loaded)
+- `dist/assets/index-[hash].css` — Main styles
+- `dist/assets/AboutModal-[hash].css` — Modal styles
+- `stats.html` — Bundle analysis report (treemap)
 
 ---
 
-## Docker deployment
+## Docker Deployment
 
-This project supports containerized execution using Docker Compose.
+This project supports containerized execution using Docker Compose with nginx.
 
-### Build and run
+### Build and Run
 
 ```bash
 docker compose up -d --build
 ```
 
-### Verify service status
+The application will be available at `http://localhost:3000`.
+
+### Verify Service Status
 
 ```bash
 docker compose ps
 ```
 
-### Shutdown containers
+### Shutdown Containers
 
 ```bash
 docker compose down
 ```
 
-### Healthcheck behavior
+### Healthcheck
 
-The Compose service includes a healthcheck to confirm that the React production app is ready before it is considered healthy.
-
----
-
-## Environment variables
-
-The app supports the following environment variables via Vite:
-
-- `VITE_HN_TOP_STORIES_URL`: HackerNews API endpoint for top stories
-- `VITE_HN_ITEM_URL`: HackerNews API endpoint for story details
-- `PORT`: local server port for Vite preview and production preview
-
-These values are preconfigured in `.env.example`.
+The Compose service includes a healthcheck that verifies the nginx server is responding on port 3000. The service reports as `healthy` once the check passes.
 
 ---
 
-## Project structure
+## Environment Variables
+
+Documented in `.env.example`:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_HN_TOP_STORIES_URL` | HackerNews API endpoint for top stories | `https://hacker-news.firebaseio.com/v0/topstories.json` |
+| `VITE_HN_ITEM_URL` | HackerNews API base endpoint for story details | `https://hacker-news.firebaseio.com/v0/item` |
+| `PORT` | Local server port | `3000` |
+
+---
+
+## Project Structure
 
 ```text
 .
-├── Dockerfile
-├── docker-compose.yml
-├── index.html
-├── package.json
+├── Dockerfile              # Multi-stage build: Node build → nginx serve
+├── docker-compose.yml      # Service orchestration with healthcheck
+├── nginx.conf              # Nginx config for SPA with gzip and caching
+├── index.html              # Vite entry HTML with preconnect hints
+├── package.json            # Dependencies and scripts
+├── vite.config.js          # Vite config with visualizer plugin
+├── .env.example            # Environment variable documentation
+├── .gitignore
 ├── README.md
-├── PERFORMANCE.md
+├── PERFORMANCE.md          # Detailed performance audit and optimization log
+├── stats.html              # Bundle analysis output (treemap)
 ├── public/
-├── src/
-│   ├── AboutModal.css
-│   ├── AboutModal.jsx
-│   ├── App.css
-│   ├── App.jsx
-│   ├── index.css
-│   └── main.jsx
-└── stats.html
+│   ├── favicon.svg
+│   └── icons.svg
+├── screenshots/
+│   ├── image.png
+│   └── image1.png
+└── src/
+    ├── main.jsx            # React entry point
+    ├── App.jsx             # Main app with optimized fetching and virtualization
+    ├── App.css             # Responsive styles with CSS custom properties
+    ├── AboutModal.jsx      # Lazy-loaded modal component (code-split)
+    ├── AboutModal.css      # Modal styles with animations
+    └── index.css           # Global resets, scrollbar, focus, and theme styles
 ```
 
 ---
 
-## Performance highlights
+## Performance Highlights
 
-- Virtualized list rendering with `@tanstack/react-virtual`
-- Optimized image loading using `loading="lazy"` and `fetchpriority="high"`
-- Reduced bundle overhead with code splitting and lazy-loaded modal component
-- Improved startup by preconnecting to required APIs and using efficient data fetch batching
-- CSS transitions and animations built with hardware-friendly properties only
+See [PERFORMANCE.md](PERFORMANCE.md) for the full audit. Key improvements:
+
+| Metric | Slow Version | Optimized |
+|--------|-------------|-----------|
+| LCP | ~8.5s | ~1.8s |
+| TBT | ~1200ms | ~100ms |
+| CLS | ~0.45 | ~0.02 |
+| Network | 501 serial requests | Parallel batched requests |
+| DOM nodes | 500+ article elements | <50 (virtualized) |
+| Bundle | Single large JS file | Multiple code-split chunks |
 
 ---
 
-## Accessibility improvements
+## Accessibility
 
-- High-contrast text and focus-visible outlines for keyboard navigation
-- Semantic HTML with landmarks and accessible form controls
-- Accessible button labels and keyboard-friendly modal behavior
+- High-contrast text and `focus-visible` outlines for keyboard navigation
+- Semantic HTML with proper heading hierarchy and landmarks
+- Accessible form controls with `aria-label` and `aria-pressed` attributes
 - Screen-reader friendly loading and error states
-
----
-
-## Branch information
-
-- `main`: optimized production implementation with performance and UX improvements
-- `slow-version`: intentionally slower implementation for performance comparison and learning
-
----
-
-## Git workflow
-
-After making changes, use:
-
-```bash
-git add .
-git commit -m "Describe your updates clearly"
-git push origin main
-```
-
----
-
-## Notes for evaluators
-
-This repository is built to demonstrate both frontend performance engineering and production readiness. It includes a complete local development workflow, optimized build output, runtime containerization, and clear performance documentation.
+- Respects `prefers-reduced-motion` to disable animations
 
 ---
 
